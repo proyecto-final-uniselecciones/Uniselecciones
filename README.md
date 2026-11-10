@@ -46,7 +46,6 @@ Cada nodo corre en contenedores y vive en el equipo de un integrante, así podem
 docs/
   BITACORA_IA.md               Registro de cada uso de IA
   DECISIONES.md                Decisiones de diseño con su justificación
-  img/                         Bosquejo de pantallas y esquema relacional
   propuesta/                   Propuesta del equipo y carta de acuerdo de uso de IA
 .env.example                   Variables de entorno de ejemplo
 docker-compose.yml             PostgreSQL y MongoDB del nodo
