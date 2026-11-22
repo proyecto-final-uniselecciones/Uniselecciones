@@ -52,24 +52,37 @@ docs/
   DECISIONES.md                Decisiones de diseño con su justificación
   propuesta/                   Propuesta del equipo y carta de acuerdo de uso de IA
 .env.example                   Variables de entorno de ejemplo
-docker-compose.yml             PostgreSQL y MongoDB del nodo
+docker-compose.yml             Tres nodos PostgreSQL y MongoDB de analítica
 .gitignore
 README.md
 ```
 
 ## Cómo levantar los contenedores
 
+Si todavía no tienes un `.env`, cópialo desde el ejemplo y cambia las
+contraseñas de ejemplo. No reemplaces un `.env` que ya contiene tus valores:
+añádele las variables nuevas que necesites. El archivo `.env` está ignorado
+por Git.
+
 ```bash
 cp .env.example .env
 ```
 
-Llena `.env` con tus propios valores y nunca lo subas al repositorio: está en `.gitignore`. Después:
+El perfil `local` levanta tres bases PostgreSQL independientes para Aguascalientes,
+Jalisco y Zacatecas, además de MongoDB para analítica. Los puertos locales por
+defecto son `5432`, `5433`, `5434` y `27017`.
 
 ```bash
 docker compose up -d
+docker compose ps
 ```
 
-Eso levanta PostgreSQL en el puerto 5432 y MongoDB en el 27017.
+Para la demostración distribuida, configura `COMPOSE_PROFILES` en el `.env` de
+cada computadora: `ags` para S1 (PostgreSQL y MongoDB), `jalisco` para S2 o
+`zacatecas` para S3. En ese modo cambia `DB_BIND_IP` a la IP VPN del equipo y
+limita el firewall a conexiones desde la VPN. El perfil `local` sirve para
+desarrollar en una computadora; la demostración de particiones debe usar los
+tres equipos físicos descritos en `docs/DECISIONES.md`.
 
 ## Aplicación Flutter
 
