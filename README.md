@@ -44,6 +44,8 @@ Cada nodo corre en contenedores y vive en el equipo de un integrante, así podem
   ISSUE_TEMPLATE/tarea.md      Plantilla de Issue
   pull_request_template.md     Plantilla de pull request
 apps/
+  api/                         API REST con FastAPI
+    src/uniselecciones_api/    Rutas, middleware y modelos de respuesta
   mobile/                      Aplicación Flutter para Android, Windows y web
     lib/app/                   Tema, navegación y estado compartido
     lib/features/auth/         Pantalla inicial de acceso
@@ -102,6 +104,13 @@ flutter run -d chrome
 Para ejecutar la aplicación nativa de Windows, usa `flutter run -d windows`.
 Para Android, conecta un dispositivo con depuración USB y selecciónalo con
 `flutter devices`.
+
+## API REST
+
+El esqueleto FastAPI, las instrucciones para preparar su entorno virtual y sus
+endpoints iniciales están en [`apps/api/README.md`](apps/api/README.md). Expone
+`/health` y la documentación OpenAPI en `/docs` y `/openapi.json`; todavía no
+conecta las bases de datos ni autentica usuarios.
 
 ## Responsables
 
