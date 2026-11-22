@@ -43,6 +43,10 @@ Cada nodo corre en contenedores y vive en el equipo de un integrante, así podem
 .github/
   ISSUE_TEMPLATE/tarea.md      Plantilla de Issue
   pull_request_template.md     Plantilla de pull request
+apps/
+  mobile/                      Aplicación Flutter para Android, Windows y web
+    lib/app/                   Tema, navegación y estado compartido
+    lib/features/auth/         Pantalla inicial de acceso
 docs/
   BITACORA_IA.md               Registro de cada uso de IA
   DECISIONES.md                Decisiones de diseño con su justificación
@@ -66,6 +70,25 @@ docker compose up -d
 ```
 
 Eso levanta PostgreSQL en el puerto 5432 y MongoDB en el 27017.
+
+## Aplicación Flutter
+
+El proyecto multiplataforma está en desarrollo en `apps/mobile`. El primer
+corte incluye el tema Material 3, navegación inicial y la pantalla de acceso
+con validación. La autenticación se conectará cuando esté definido el endpoint
+de FastAPI; el formulario actual no envía ni guarda credenciales.
+
+Desde PowerShell:
+
+```powershell
+Set-Location apps/mobile
+flutter pub get
+flutter run -d chrome
+```
+
+Para ejecutar la aplicación nativa de Windows, usa `flutter run -d windows`.
+Para Android, conecta un dispositivo con depuración USB y selecciónalo con
+`flutter devices`.
 
 ## Responsables
 
