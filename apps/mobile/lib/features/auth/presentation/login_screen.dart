@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/auth_controller.dart';
@@ -12,14 +13,32 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _passwordVisible = false;
+  bool _isRegistering = false;
+  String _selectedRole = 'jugador';
+  String? _selectedRegion;
+  int? _selectedUniversityId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AuthController>().checkDatabaseConnection();
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -39,9 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   vertical: 32,
                 ),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isWide ? 1120 : 460,
-                  ),
+                  constraints: BoxConstraints(maxWidth: isWide ? 1120 : 460),
                   child: isWide
                       ? Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -69,7 +86,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _loginCard(BuildContext context) {
-    final notice = context.watch<AuthController>().notice;
+    final auth = context.watch<AuthController>();
+    final notice = auth.notice;
+    final success = auth.noticeIsSuccess;
+    final universities = auth.universities
+        .where((university) => university['region'] == _selectedRegion)
+        .toList(growable: false);
 
     return Card(
       margin: EdgeInsets.zero,
@@ -88,19 +110,161 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Inicia sesión',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                _isRegistering ? 'Crea tu cuenta' : 'Inicia sesión',
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
-                'Usa tu correo institucional para continuar.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF64748B),
-                    ),
+                _isRegistering
+                    ? 'Regístrate para entrar a UniSelecciones.'
+                    : 'Usa tu correo institucional para continuar.',
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: const Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 18),
+              _DatabaseStatus(
+                isChecking: auth.isCheckingDatabase,
+                isConnected: auth.databaseConnected,
               ),
               const SizedBox(height: 28),
+              if (_isRegistering) ...[
+                TextFormField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.name],
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre completo',
+                    prefixIcon: Icon(Icons.person_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().length < 3) {
+                      return 'Escribe tu nombre completo.';
+                    }
+                    return null;
+                  },
+                  onChanged: (_) =>
+                      context.read<AuthController>().clearNotice(),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  key: ValueKey('role-$_selectedRole'),
+                  initialValue: _selectedRole,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo de cuenta',
+                    prefixIcon: Icon(Icons.badge_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'jugador', child: Text('Jugador')),
+                    DropdownMenuItem(
+                      value: 'entrenador',
+                      child: Text('Entrenador'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'institucion',
+                      child: Text('Institución'),
+                    ),
+                  ],
+                  onChanged: auth.isLoading
+                      ? null
+                      : (role) {
+                          if (role != null)
+                            setState(() => _selectedRole = role);
+                        },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _selectedRole == 'jugador'
+                      ? 'Tu cuenta se activa al registrarte.'
+                      : 'Puedes entrar con este perfil al terminar el registro.',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: const Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  key: ValueKey('region-$_selectedRegion'),
+                  initialValue: _selectedRegion,
+                  decoration: const InputDecoration(
+                    labelText: 'Estado',
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'AGS',
+                      child: Text('Aguascalientes'),
+                    ),
+                    DropdownMenuItem(value: 'JAL', child: Text('Jalisco')),
+                    DropdownMenuItem(value: 'ZAC', child: Text('Zacatecas')),
+                  ],
+                  onChanged: auth.isLoading
+                      ? null
+                      : (region) {
+                          setState(() {
+                            _selectedRegion = region;
+                            _selectedUniversityId = null;
+                          });
+                        },
+                  validator: (value) =>
+                      value == null ? 'Selecciona tu estado.' : null,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  key: ValueKey(
+                    'university-$_selectedRegion-$_selectedUniversityId',
+                  ),
+                  initialValue: _selectedUniversityId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Universidad',
+                    prefixIcon: Icon(Icons.school_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  hint: Text(
+                    auth.isLoadingUniversities
+                        ? 'Cargando universidades…'
+                        : 'Selecciona primero tu estado',
+                  ),
+                  items: universities.map((university) {
+                    return DropdownMenuItem<int>(
+                      value: university['id_univ'] as int,
+                      child: Text(
+                        university['nombre'] as String,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged:
+                      auth.isLoading ||
+                          auth.isLoadingUniversities ||
+                          _selectedRegion == null
+                      ? null
+                      : (universityId) {
+                          setState(() => _selectedUniversityId = universityId);
+                        },
+                  validator: (value) =>
+                      value == null ? 'Selecciona una universidad.' : null,
+                ),
+                if (auth.universityError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    auth.universityError!,
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: const Color(0xFFB42318)),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Text(
+                  'El catálogo incluye instituciones afiliadas a ANUIES.',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: const Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 16),
+              ],
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -142,15 +306,49 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (value == null || value.isEmpty) {
                     return 'Escribe tu contraseña.';
                   }
+                  if (_isRegistering && value.length < 8) {
+                    return 'Usa al menos 8 caracteres.';
+                  }
                   return null;
                 },
                 onChanged: (_) => context.read<AuthController>().clearNotice(),
                 onFieldSubmitted: (_) => _submit(context),
               ),
+              if (_isRegistering) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: !_passwordVisible,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirma tu contraseña',
+                    prefixIcon: Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Confirma tu contraseña.';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Las contraseñas no coinciden.';
+                    }
+                    return null;
+                  },
+                  onChanged: (_) =>
+                      context.read<AuthController>().clearNotice(),
+                  onFieldSubmitted: (_) => _submit(context),
+                ),
+              ],
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: () => _submit(context),
-                child: const Text('Entrar'),
+                onPressed: auth.isLoading ? null : () => _submit(context),
+                child: auth.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(_isRegistering ? 'Crear cuenta' : 'Entrar'),
               ),
               if (notice != null) ...[
                 const SizedBox(height: 16),
@@ -159,22 +357,30 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4E5),
+                      color: success
+                          ? const Color(0xFFECFDF3)
+                          : const Color(0xFFFFF4E5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: Color(0xFF9A5B00),
+                        Icon(
+                          success
+                              ? Icons.check_circle_outline
+                              : Icons.info_outline,
+                          color: success
+                              ? Color(0xFF16803C)
+                              : Color(0xFF9A5B00),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             notice,
-                            style: const TextStyle(
-                              color: Color(0xFF704300),
+                            style: TextStyle(
+                              color: success
+                                  ? Color(0xFF176B36)
+                                  : Color(0xFF704300),
                             ),
                           ),
                         ),
@@ -183,6 +389,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ],
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: auth.isLoading
+                    ? null
+                    : () {
+                        setState(() {
+                          _isRegistering = !_isRegistering;
+                          _selectedRole = 'jugador';
+                          _selectedRegion = null;
+                          _selectedUniversityId = null;
+                        });
+                        auth.clearNotice();
+                        if (_isRegistering) auth.loadUniversities();
+                      },
+                child: Text(
+                  _isRegistering
+                      ? '¿Ya tienes cuenta? Inicia sesión'
+                      : '¿No tienes cuenta? Regístrate',
+                ),
+              ),
             ],
           ),
         ),
@@ -197,12 +423,77 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!emailPattern.hasMatch(email)) {
       return 'Revisa el formato del correo.';
     }
+    if (_isRegistering &&
+        _selectedUniversityId == 1001 &&
+        _selectedRole == 'jugador' &&
+        !RegExp(
+          r'^al\d{6}@edu\.uaa\.mx$',
+          caseSensitive: false,
+        ).hasMatch(email)) {
+      return 'Para UAA, usa al + seis dígitos + @edu.uaa.mx.';
+    }
     return null;
   }
 
-  void _submit(BuildContext context) {
+  Future<void> _submit(BuildContext context) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    context.read<AuthController>().announceApiPending();
+    final auth = context.read<AuthController>();
+    final authenticated = _isRegistering
+        ? await auth.register(
+            name: _nameController.text,
+            email: _emailController.text,
+            password: _passwordController.text,
+            universityId: _selectedUniversityId!,
+            role: _selectedRole,
+          )
+        : await auth.login(
+            email: _emailController.text,
+            password: _passwordController.text,
+          );
+    if (authenticated && context.mounted) context.go('/home');
+  }
+}
+
+class _DatabaseStatus extends StatelessWidget {
+  const _DatabaseStatus({required this.isChecking, required this.isConnected});
+
+  final bool isChecking;
+  final bool? isConnected;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isChecking
+        ? const Color(0xFF64748B)
+        : isConnected == true
+        ? const Color(0xFF16803C)
+        : const Color(0xFFB42318);
+    final icon = isChecking
+        ? Icons.sync
+        : isConnected == true
+        ? Icons.cloud_done_outlined
+        : Icons.cloud_off_outlined;
+    final label = isChecking
+        ? 'Comprobando conexión con PostgreSQL…'
+        : isConnected == true
+        ? 'Base de datos conectada'
+        : 'Base de datos desconectada';
+
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: color, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -214,8 +505,9 @@ class _WelcomePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textAlign = compact ? TextAlign.center : TextAlign.start;
-    final crossAxisAlignment =
-        compact ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+    final crossAxisAlignment = compact
+        ? CrossAxisAlignment.center
+        : CrossAxisAlignment.start;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -238,19 +530,15 @@ class _WelcomePanel extends StatelessWidget {
         Text(
           'UniSelecciones',
           textAlign: textAlign,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.7,
-              ),
+          style: Theme.of(context).textTheme.headlineMedium
+              ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.7),
         ),
         const SizedBox(height: 12),
         Text(
           'La organización del baloncesto universitario, en un solo lugar.',
           textAlign: textAlign,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF64748B),
-                height: 1.45,
-              ),
+          style: Theme.of(context).textTheme.titleMedium
+              ?.copyWith(color: const Color(0xFF64748B), height: 1.45),
         ),
         if (!compact) ...[
           const SizedBox(height: 28),
