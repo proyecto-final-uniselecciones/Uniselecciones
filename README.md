@@ -43,29 +43,80 @@ Cada nodo corre en contenedores y vive en el equipo de un integrante, así podem
 .github/
   ISSUE_TEMPLATE/tarea.md      Plantilla de Issue
   pull_request_template.md     Plantilla de pull request
+apps/
+  api/                         API REST con FastAPI
+    src/uniselecciones_api/    Rutas, middleware y modelos de respuesta
+  mobile/                      Aplicación Flutter para Android, Windows y web
+    lib/app/                   Tema, navegación y estado compartido
+    lib/features/auth/         Pantalla inicial de acceso
 docs/
   BITACORA_IA.md               Registro de cada uso de IA
   DECISIONES.md                Decisiones de diseño con su justificación
   propuesta/                   Propuesta del equipo y carta de acuerdo de uso de IA
+db/
+  01_esquema.sql               Esquema relacional de 12 tablas
+  02_logica.sql                Funciones, procedimientos, vistas y triggers
+  03_roles.sql                 Privilegios de API y analítica
+  04_datos_demo.sql            Tres cuentas sintéticas para desarrollo local
+  06_catalogo_universidades.sql Catálogo inicial de instituciones afiliadas
 .env.example                   Variables de entorno de ejemplo
-docker-compose.yml             PostgreSQL y MongoDB del nodo
+docker-compose.yml             Tres nodos PostgreSQL y MongoDB de analítica
 .gitignore
 README.md
 ```
 
 ## Cómo levantar los contenedores
 
+Si todavía no tienes un `.env`, cópialo desde el ejemplo y cambia las
+contraseñas de ejemplo. No reemplaces un `.env` que ya contiene tus valores:
+añádele las variables nuevas que necesites. El archivo `.env` está ignorado
+por Git.
+
 ```bash
 cp .env.example .env
 ```
 
-Llena `.env` con tus propios valores y nunca lo subas al repositorio: está en `.gitignore`. Después:
+El perfil `local` levanta tres bases PostgreSQL independientes para Aguascalientes,
+Jalisco y Zacatecas, además de MongoDB para analítica. Los puertos locales por
+defecto son `5432`, `5433`, `5434` y `27017`.
 
 ```bash
 docker compose up -d
+docker compose ps
 ```
 
-Eso levanta PostgreSQL en el puerto 5432 y MongoDB en el 27017.
+Para la demostración distribuida, configura `COMPOSE_PROFILES` en el `.env` de
+cada computadora: `ags` para S1 (PostgreSQL y MongoDB), `jalisco` para S2 o
+`zacatecas` para S3. En ese modo cambia `DB_BIND_IP` a la IP VPN del equipo y
+limita el firewall a conexiones desde la VPN. El perfil `local` sirve para
+desarrollar en una computadora; la demostración de particiones debe usar los
+tres equipos físicos descritos en `docs/DECISIONES.md`.
+
+## Aplicación Flutter
+
+El proyecto multiplataforma está en desarrollo en `apps/mobile`. El primer
+corte incluye el tema Material 3, registro e inicio de sesión conectados a
+FastAPI. Al entrar, jugador, entrenador e institución reciben un panel propio;
+sus módulos deportivos específicos se integrarán en siguientes pasos.
+
+Desde PowerShell:
+
+```powershell
+Set-Location apps/mobile
+flutter pub get
+flutter run -d chrome
+```
+
+Para ejecutar la aplicación nativa de Windows, usa `flutter run -d windows`.
+Para Android, conecta un dispositivo con depuración USB y selecciónalo con
+`flutter devices`.
+
+## API REST
+
+La API FastAPI conecta con PostgreSQL, expone `GET /health` para revisar la
+conexión, y autentica con `POST /auth/login`. La guía de configuración, entorno
+virtual y prueba está en [`apps/api/README.md`](apps/api/README.md). La
+documentación interactiva queda en `/docs`.
 
 ## Responsables
 
