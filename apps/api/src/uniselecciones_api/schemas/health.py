@@ -6,8 +6,9 @@ from pydantic import BaseModel
 
 
 class HealthResponse(BaseModel):
-    """Estado básico del proceso de API."""
+    """Estado de la API y su conexión con PostgreSQL."""
 
-    status: Literal["ok"]
+    status: Literal["ok", "degraded"]
     service: str
     version: str
+    database: Literal["connected", "disconnected"]

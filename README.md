@@ -53,6 +53,12 @@ docs/
   BITACORA_IA.md               Registro de cada uso de IA
   DECISIONES.md                Decisiones de diseño con su justificación
   propuesta/                   Propuesta del equipo y carta de acuerdo de uso de IA
+db/
+  01_esquema.sql               Esquema relacional de 12 tablas
+  02_logica.sql                Funciones, procedimientos, vistas y triggers
+  03_roles.sql                 Privilegios de API y analítica
+  04_datos_demo.sql            Tres cuentas sintéticas para desarrollo local
+  06_catalogo_universidades.sql Catálogo inicial de instituciones afiliadas
 .env.example                   Variables de entorno de ejemplo
 docker-compose.yml             Tres nodos PostgreSQL y MongoDB de analítica
 .gitignore
@@ -89,9 +95,9 @@ tres equipos físicos descritos en `docs/DECISIONES.md`.
 ## Aplicación Flutter
 
 El proyecto multiplataforma está en desarrollo en `apps/mobile`. El primer
-corte incluye el tema Material 3, navegación inicial y la pantalla de acceso
-con validación. La autenticación se conectará cuando esté definido el endpoint
-de FastAPI; el formulario actual no envía ni guarda credenciales.
+corte incluye el tema Material 3, registro e inicio de sesión conectados a
+FastAPI. Al entrar, jugador, entrenador e institución reciben un panel propio;
+sus módulos deportivos específicos se integrarán en siguientes pasos.
 
 Desde PowerShell:
 
@@ -107,10 +113,10 @@ Para Android, conecta un dispositivo con depuración USB y selecciónalo con
 
 ## API REST
 
-El esqueleto FastAPI, las instrucciones para preparar su entorno virtual y sus
-endpoints iniciales están en [`apps/api/README.md`](apps/api/README.md). Expone
-`/health` y la documentación OpenAPI en `/docs` y `/openapi.json`; todavía no
-conecta las bases de datos ni autentica usuarios.
+La API FastAPI conecta con PostgreSQL, expone `GET /health` para revisar la
+conexión, y autentica con `POST /auth/login`. La guía de configuración, entorno
+virtual y prueba está en [`apps/api/README.md`](apps/api/README.md). La
+documentación interactiva queda en `/docs`.
 
 ## Responsables
 
