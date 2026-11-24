@@ -61,6 +61,35 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Tipografía de UniSelecciones.
+  # Las fuentes van empaquetadas en assets/fonts para que la aplicación no
+  # dependa de internet al arrancar (si se cargaran desde Google Fonts en
+  # tiempo de ejecución, sin red se vería con la tipografía de respaldo).
+  #
+  # Barlow Condensed: títulos, marcadores y cifras. Es una condensada de
+  # tono deportivo, cercana a la rotulación de las ligas de baloncesto.
+  # Barlow: texto corrido, formularios y etiquetas.
+  # Ambas son de Google Fonts, licencia SIL Open Font License 1.1.
+  fonts:
+    - family: BarlowCondensed
+      fonts:
+        - asset: assets/fonts/BarlowCondensed-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BarlowCondensed-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BarlowCondensed-ExtraBold.ttf
+          weight: 800
+    - family: Barlow
+      fonts:
+        - asset: assets/fonts/Barlow-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Barlow-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Barlow-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Barlow-Bold.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
