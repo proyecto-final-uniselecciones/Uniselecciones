@@ -3,7 +3,19 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/auth_controller.dart';
+import '../../../app/theme.dart';
+import '../../home/presentation/dashboard_components.dart';
 
+/// Pantalla de acceso y registro.
+///
+/// Son dos modos de la misma pantalla, como estaba: el enlace de abajo
+/// alterna entre uno y otro. La lógica del formulario (validaciones,
+/// catálogo de universidades, envío y navegación) no cambió; lo que
+/// cambió es la presentación.
+///
+/// En pantalla ancha se parte en dos: a la izquierda un bloque azul
+/// marino con la marca, a la derecha el formulario sobre fondo claro. En
+/// pantalla estrecha el bloque de marca se convierte en una cabecera.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -45,39 +57,54 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: UniColors.canvas,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 850;
-          final horizontalPadding = isWide ? 48.0 : 24.0;
+          final isWide = constraints.maxWidth >= 980;
 
-          return SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: 32,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: isWide ? 1120 : 460),
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Expanded(child: _WelcomePanel()),
-                            const SizedBox(width: 72),
-                            Expanded(child: _loginCard(context)),
-                          ],
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const _WelcomePanel(compact: true),
-                            const SizedBox(height: 28),
-                            _loginCard(context),
-                          ],
+          if (isWide) {
+            // Dos columnas a sangre: el azul marino llega hasta el borde.
+            return Row(
+              children: [
+                const Expanded(flex: 5, child: _BrandPanel()),
+                Expanded(
+                  flex: 4,
+                  child: SafeArea(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 44,
+                          vertical: 36,
                         ),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 480),
+                          child: _loginCard(context),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
+            );
+          }
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                const _BrandPanel(compact: true),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 26, 20, 34),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: _loginCard(context),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -93,41 +120,60 @@ class _LoginScreenState extends State<LoginScreen> {
         .where((university) => university['region'] == _selectedRegion)
         .toList(growable: false);
 
-    return Card(
-      margin: EdgeInsets.zero,
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-        borderRadius: BorderRadius.circular(24),
+    return Container(
+      decoration: BoxDecoration(
+        color: UniColors.surface,
+        borderRadius: UniShape.lg,
+        border: Border.all(color: UniColors.line),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14101828),
+            blurRadius: 30,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(28),
+        padding: const EdgeInsets.all(30),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                _isRegistering ? 'Crea tu cuenta' : 'Inicia sesión',
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: UniColors.red,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _isRegistering ? 'CREA TU CUENTA' : 'INICIA SESIÓN',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 _isRegistering
                     ? 'Regístrate para entrar a UniSelecciones.'
                     : 'Usa tu correo institucional para continuar.',
                 style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: const Color(0xFF64748B)),
+                    ?.copyWith(color: UniColors.inkSoft),
               ),
               const SizedBox(height: 18),
               _DatabaseStatus(
                 isChecking: auth.isCheckingDatabase,
                 isConnected: auth.databaseConnected,
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 26),
               if (_isRegistering) ...[
                 TextFormField(
                   controller: _nameController,
@@ -137,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Nombre completo',
                     prefixIcon: Icon(Icons.person_outline),
-                    border: OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().length < 3) {
@@ -155,7 +200,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Tipo de cuenta',
                     prefixIcon: Icon(Icons.badge_outlined),
-                    border: OutlineInputBorder(),
                   ),
                   items: const [
                     DropdownMenuItem(value: 'jugador', child: Text('Jugador')),
@@ -171,8 +215,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   onChanged: auth.isLoading
                       ? null
                       : (role) {
-                          if (role != null)
+                          if (role != null) {
                             setState(() => _selectedRole = role);
+                          }
                         },
                 ),
                 const SizedBox(height: 8),
@@ -181,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? 'Tu cuenta se activa al registrarte.'
                       : 'Puedes entrar con este perfil al terminar el registro.',
                   style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: const Color(0xFF64748B)),
+                      ?.copyWith(color: UniColors.inkSoft),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -190,7 +235,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Estado',
                     prefixIcon: Icon(Icons.location_on_outlined),
-                    border: OutlineInputBorder(),
                   ),
                   items: const [
                     DropdownMenuItem(
@@ -221,7 +265,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Universidad',
                     prefixIcon: Icon(Icons.school_outlined),
-                    border: OutlineInputBorder(),
                   ),
                   hint: Text(
                     auth.isLoadingUniversities
@@ -254,14 +297,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     auth.universityError!,
                     style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: const Color(0xFFB42318)),
+                        ?.copyWith(color: UniColors.redDark),
                   ),
                 ],
                 const SizedBox(height: 8),
                 Text(
                   'El catálogo incluye instituciones afiliadas a ANUIES.',
                   style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: const Color(0xFF64748B)),
+                      ?.copyWith(color: UniColors.inkSoft),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -273,7 +316,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Correo institucional',
                   prefixIcon: Icon(Icons.alternate_email),
-                  border: OutlineInputBorder(),
                 ),
                 validator: _validateEmail,
                 onChanged: (_) => context.read<AuthController>().clearNotice(),
@@ -287,7 +329,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
                   prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     tooltip: _passwordVisible
                         ? 'Ocultar contraseña'
@@ -323,7 +364,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Confirma tu contraseña',
                     prefixIcon: Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -339,28 +379,36 @@ class _LoginScreenState extends State<LoginScreen> {
                   onFieldSubmitted: (_) => _submit(context),
                 ),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: 26),
               FilledButton(
                 onPressed: auth.isLoading ? null : () => _submit(context),
                 child: auth.isLoading
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: Colors.white,
+                        ),
                       )
-                    : Text(_isRegistering ? 'Crear cuenta' : 'Entrar'),
+                    : Text(_isRegistering ? 'CREAR CUENTA' : 'ENTRAR'),
               ),
               if (notice != null) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Semantics(
                   liveRegion: true,
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: success
                           ? const Color(0xFFECFDF3)
                           : const Color(0xFFFFF4E5),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: UniShape.sm,
+                      border: Border.all(
+                        color: success
+                            ? const Color(0xFFABEFC6)
+                            : const Color(0xFFF5D7A8),
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,19 +417,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           success
                               ? Icons.check_circle_outline
                               : Icons.info_outline,
+                          size: 20,
                           color: success
-                              ? Color(0xFF16803C)
-                              : Color(0xFF9A5B00),
+                              ? const Color(0xFF16803C)
+                              : const Color(0xFF9A5B00),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 11),
                         Expanded(
                           child: Text(
                             notice,
-                            style: TextStyle(
-                              color: success
-                                  ? Color(0xFF176B36)
-                                  : Color(0xFF704300),
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: success
+                                      ? const Color(0xFF176B36)
+                                      : const Color(0xFF704300),
+                                ),
                           ),
                         ),
                       ],
@@ -389,7 +439,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               TextButton(
                 onPressed: auth.isLoading
                     ? null
@@ -454,6 +504,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+/// Indicador del estado real de la conexión con PostgreSQL.
 class _DatabaseStatus extends StatelessWidget {
   const _DatabaseStatus({required this.isChecking, required this.isConnected});
 
@@ -463,10 +514,10 @@ class _DatabaseStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isChecking
-        ? const Color(0xFF64748B)
+        ? UniColors.inkSoft
         : isConnected == true
-        ? const Color(0xFF16803C)
-        : const Color(0xFFB42318);
+        ? UniColors.green
+        : UniColors.redDark;
     final icon = isChecking
         ? Icons.sync
         : isConnected == true
@@ -480,84 +531,134 @@ class _DatabaseStatus extends StatelessWidget {
 
     return Semantics(
       liveRegion: true,
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: color, fontWeight: FontWeight.w600),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: UniShape.sm,
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 17, color: color),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: UniFonts.text,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _WelcomePanel extends StatelessWidget {
-  const _WelcomePanel({this.compact = false});
+/// Bloque azul marino con la marca y la propuesta del producto.
+class _BrandPanel extends StatelessWidget {
+  const _BrandPanel({this.compact = false});
 
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final textAlign = compact ? TextAlign.center : TextAlign.start;
-    final crossAxisAlignment = compact
-        ? CrossAxisAlignment.center
-        : CrossAxisAlignment.start;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: crossAxisAlignment,
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(
-            Icons.sports_basketball,
-            color: Colors.white,
-            size: 34,
-          ),
+    return Container(
+      width: double.infinity,
+      height: compact ? null : double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [UniColors.navy900, UniColors.navy700, UniColors.navy500],
+          stops: [0.0, 0.6, 1.0],
         ),
-        const SizedBox(height: 20),
-        Text(
-          'UniSelecciones',
-          textAlign: textAlign,
-          style: Theme.of(context).textTheme.headlineMedium
-              ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.7),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'La organización del baloncesto universitario, en un solo lugar.',
-          textAlign: textAlign,
-          style: Theme.of(context).textTheme.titleMedium
-              ?.copyWith(color: const Color(0xFF64748B), height: 1.45),
-        ),
-        if (!compact) ...[
-          const SizedBox(height: 28),
-          const _FeatureLabel(
-            icon: Icons.calendar_month_outlined,
-            label: 'Calendario y partidos',
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: compact ? -50 : -70,
+            bottom: compact ? -60 : -80,
+            child: Icon(
+              Icons.sports_basketball,
+              size: compact ? 220 : 380,
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
           ),
-          const SizedBox(height: 12),
-          const _FeatureLabel(
-            icon: Icons.groups_2_outlined,
-            label: 'Equipos y entrenamientos',
+          // Franja roja de acento en el borde inferior.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(height: 5, color: UniColors.red),
           ),
-          const SizedBox(height: 12),
-          const _FeatureLabel(
-            icon: Icons.query_stats_outlined,
-            label: 'Seguimiento del rendimiento',
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 22 : 56,
+                compact ? 26 : 56,
+                compact ? 22 : 56,
+                compact ? 34 : 56,
+              ),
+              child: Column(
+                mainAxisAlignment: compact
+                    ? MainAxisAlignment.start
+                    : MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const UniBrandMark(),
+                  SizedBox(height: compact ? 22 : 42),
+                  Text(
+                    'EL BALONCESTO\nUNIVERSITARIO,\nCOMO SE DEBE',
+                    style:
+                        (compact
+                                ? Theme.of(context).textTheme.headlineLarge
+                                : Theme.of(context).textTheme.displayMedium)
+                            ?.copyWith(color: Colors.white),
+                  ),
+                  SizedBox(height: compact ? 12 : 20),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Text(
+                      'Calendario, plantillas, entrenamientos, lesiones y '
+                      'estadísticas de las selecciones de Aguascalientes, '
+                      'Jalisco y Zacatecas, en un solo lugar.',
+                      style: Theme.of(context).textTheme.bodyLarge
+                          ?.copyWith(color: UniColors.onNavySoft),
+                    ),
+                  ),
+                  if (!compact) ...[
+                    const SizedBox(height: 40),
+                    const _FeatureLabel(
+                      icon: Icons.calendar_month_outlined,
+                      label: 'Calendario y partidos',
+                    ),
+                    const SizedBox(height: 18),
+                    const _FeatureLabel(
+                      icon: Icons.groups_2_outlined,
+                      label: 'Equipos y entrenamientos',
+                    ),
+                    const SizedBox(height: 18),
+                    const _FeatureLabel(
+                      icon: Icons.query_stats_outlined,
+                      label: 'Seguimiento del rendimiento',
+                    ),
+                    const SizedBox(height: 48),
+                    const _RegionStrip(),
+                  ],
+                ],
+              ),
+            ),
           ),
         ],
-      ],
+      ),
     );
   }
 }
@@ -572,9 +673,84 @@ class _FeatureLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 12),
-        Text(label, style: Theme.of(context).textTheme.bodyLarge),
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: UniColors.navy600),
+          ),
+          child: Icon(icon, color: UniColors.red, size: 19),
+        ),
+        const SizedBox(width: 14),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: UniFonts.text,
+            fontSize: 15.5,
+            fontWeight: FontWeight.w500,
+            color: UniColors.onNavy,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Tira con los tres estados del sistema distribuido, al estilo de la
+/// barra de marcadores de una cadena deportiva.
+class _RegionStrip extends StatelessWidget {
+  const _RegionStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    const regiones = [
+      ('AGS', 'Aguascalientes'),
+      ('JAL', 'Jalisco'),
+      ('ZAC', 'Zacatecas'),
+    ];
+
+    return Row(
+      children: [
+        for (final (siglas, nombre) in regiones) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: UniColors.navy600),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  siglas,
+                  style: const TextStyle(
+                    fontFamily: UniFonts.display,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    height: 1.0,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  nombre.toUpperCase(),
+                  style: const TextStyle(
+                    fontFamily: UniFonts.display,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 9.5,
+                    letterSpacing: 1.1,
+                    color: UniColors.onNavySoft,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (siglas != 'ZAC') const SizedBox(width: 10),
+        ],
       ],
     );
   }

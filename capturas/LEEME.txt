@@ -1,0 +1,38 @@
+UNISELECCIONES · CAPTURAS DEL REDISEÑO DEL FRONTEND
+Equipo 12 · Grupo 7C · 24 de noviembre de 2026
+
+Cómo se generaron
+-----------------
+Son capturas reales de la aplicación Flutter compilada para web
+(flutter build web --release), servida en local y fotografiada con
+Chrome en modo headless. No son maquetas ni bocetos.
+
+Las de escritorio van a 1440 px de ancho. Las de móvil se renderizaron
+a 414 px de ancho en CSS y se guardaron al cuádruple de resolución,
+por eso los archivos miden 1656 px de ancho.
+
+Archivos
+--------
+01-escritorio-acceso.png          Pantalla de acceso (1440x900)
+02-escritorio-panel-jugador.png   Panel del jugador, página completa
+03-escritorio-panel-entrenador.png Panel del entrenador, página completa
+04-escritorio-panel-institucion.png Panel de institución, página completa
+05-movil-acceso.png               Acceso en móvil
+06-movil-panel-jugador.png        Panel del jugador en móvil
+07-movil-panel-entrenador.png     Panel del entrenador en móvil
+08-movil-panel-institucion.png    Panel de institución en móvil
+09-escritorio-registro.png        Registro (segundo modo de la pantalla
+                                  de acceso). Esta se tomó desde el
+                                  navegador, porque hay que hacer clic
+                                  en el enlace para llegar: por eso está
+                                  a menor resolución que las demás.
+
+Aviso importante sobre el contenido
+-----------------------------------
+Todo lo que aparece con la etiqueta dorada MUESTRA es contenido de
+ejemplo, puesto para que se vea el diseño. Esos módulos todavía NO se
+conectan a la base de datos. Lo que sí es real en las capturas: el
+nombre de la persona, su rol y su universidad, que vienen de la sesión.
+
+Lo que marca SIN DATOS o PRÓXIMAMENTE es justamente eso: existe el
+espacio, pero aún no hay dato ni pantalla detrás.
