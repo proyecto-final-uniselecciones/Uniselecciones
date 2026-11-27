@@ -2,12 +2,14 @@
 
 import logging
 import re
+from typing import Annotated
 
 import psycopg
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from psycopg.rows import dict_row
 
 from uniselecciones_api.core.config import settings
+from uniselecciones_api.core.dependencies import get_current_user
 from uniselecciones_api.core.security import (
     create_access_token,
     hash_password,
@@ -84,11 +86,13 @@ def login(credentials: LoginRequest) -> LoginResponse:
         rol=account["rol"],
         universidad=account["universidad"],
     )
+
     token = create_access_token(
         user_id=user.id_usuario,
         email=user.correo,
         role=user.rol,
     )
+
     return LoginResponse(
         access_token=token,
         expires_in=settings.access_token_minutes * 60,
@@ -121,6 +125,7 @@ def register(credentials: RegisterRequest) -> RegisterResponse:
                     (credentials.id_univ,),
                 )
                 university = cursor.fetchone()
+
                 if university is None:
                     raise HTTPException(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -157,8 +162,10 @@ def register(credentials: RegisterRequest) -> RegisterResponse:
                         True,
                     ),
                 )
+
                 account = cursor.fetchone()
                 account["universidad"] = university["nombre"]
+
     except HTTPException:
         raise
     except psycopg.errors.UniqueViolation:
@@ -181,11 +188,13 @@ def register(credentials: RegisterRequest) -> RegisterResponse:
         rol=account["rol"],
         universidad=account["universidad"],
     )
+
     token = create_access_token(
         user_id=user.id_usuario,
         email=user.correo,
         role=user.rol,
     )
+
     return RegisterResponse(
         message="Cuenta creada. Ya puedes entrar a UniSelecciones.",
         access_token=token,
@@ -194,7 +203,28 @@ def register(credentials: RegisterRequest) -> RegisterResponse:
     )
 
 
+@router.get(
+    "/me",
+    response_model=AuthenticatedUser,
+    summary="Consultar perfil del usuario autenticado",
+    responses={
+        401: {"description": "Token de acceso inválido o ausente."},
+        403: {"description": "La cuenta está desactivada."},
+        503: {"description": "No se pudo verificar la cuenta."},
+    },
+)
+def read_current_user_profile(
+    current_user: Annotated[
+        AuthenticatedUser,
+        Depends(get_current_user),
+    ],
+) -> AuthenticatedUser:
+    """Devuelve el perfil del usuario autenticado."""
+    return current_user
+
+
 def _invalid_credentials() -> HTTPException:
+    """Genera una respuesta estándar para credenciales incorrectas."""
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Correo o contraseña incorrectos.",
