@@ -65,6 +65,87 @@ docker-compose.yml             Tres nodos PostgreSQL y MongoDB de analítica
 README.md
 ```
 
+## Seguridad TLS en PostgreSQL AGS
+
+El nodo PostgreSQL de Aguascalientes utiliza TLS para proteger las
+conexiones entre la API y la base de datos.
+
+### Requisitos
+
+- Docker y Docker Compose.
+- OpenSSL.
+- Linux con permisos de administrador para configurar los permisos
+  de la llave privada del servidor.
+
+### Generación de certificados locales
+
+Antes de iniciar PostgreSQL AGS por primera vez, generar los certificados:
+
+```bash
+bash scripts/generate_postgres_tls.sh
+```
+
+El script crea una autoridad certificadora (CA) local y un certificado
+para PostgreSQL. Solicita una contraseña para proteger la llave privada
+de la CA.
+
+Los certificados y llaves se almacenan en `certs/postgres/ags/`.
+Este directorio está excluido de Git. Cada integrante debe generar sus
+propios certificados y proteger sus llaves privadas.
+
+No compartir ni subir `ca.key`, `server.key` ni el archivo `.env`.
+
+### Variables de entorno
+
+Agregar al `.env`:
+
+```dotenv
+API_DB_SSLMODE=verify-full
+API_DB_SSLROOTCERT=certs/postgres/ags/ca.crt
+```
+
+Estas variables permiten que FastAPI verifique la identidad del
+servidor PostgreSQL mediante el certificado de la CA.
+
+### Activación de TLS
+
+Validar la configuración:
+
+```bash
+docker compose --profile local --env-file .env -f docker-compose.yml config -q
+```
+
+Iniciar PostgreSQL AGS:
+
+```bash
+docker compose --profile local --env-file .env -f docker-compose.yml up -d pg_ags
+```
+
+Si el contenedor ya existía y se modificó su configuración:
+
+```bash
+docker compose --profile local --env-file .env -f docker-compose.yml up -d --no-deps --force-recreate pg_ags
+```
+
+### Verificación
+
+Desde la API, comprobar la sesión activa:
+
+```sql
+SELECT ssl, version, cipher
+FROM pg_stat_ssl
+WHERE pid = pg_backend_pid();
+```
+
+Se espera que `ssl` sea `true` y que la conexión utilice TLS.
+
+**Alcance actual:** el certificado generado incluye `localhost` y
+`127.0.0.1`. La verificación TLS está probada para la conexión local
+con PostgreSQL AGS. Para conexiones distribuidas mediante VPN será
+necesario emitir certificados con los nombres o direcciones de los
+nodos correspondientes. Jalisco y Zacatecas todavía requieren su
+propia configuración TLS.
+
 ## Cómo levantar los contenedores
 
 Si todavía no tienes un `.env`, cópialo desde el ejemplo y cambia las

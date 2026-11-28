@@ -11,6 +11,15 @@ services:
       - "${DB_BIND_IP:-127.0.0.1}:${PG_AGS_PORT:-5432}:5432"
     volumes:
       - pg_ags_data:/var/lib/postgresql/data
+      - ./certs/postgres/ags/server:/etc/postgresql/tls:ro
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/etc/postgresql/tls/server.crt
+      - -c
+      - ssl_key_file=/etc/postgresql/tls/server.key
     healthcheck:
       test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 10s

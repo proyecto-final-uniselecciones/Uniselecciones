@@ -12,11 +12,53 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 
 def _database_url() -> str:
+    """Construye la conexión PostgreSQL con la configuración TLS indicada."""
+    sslmode = os.getenv("API_DB_SSLMODE", "prefer").strip().lower()
+
+    allowed_modes = {
+        "disable",
+        "allow",
+        "prefer",
+        "require",
+        "verify-ca",
+        "verify-full",
+    }
+
+    if sslmode not in allowed_modes:
+        raise RuntimeError("API_DB_SSLMODE debe contener un modo SSL válido.")
+
+    connection_options = {"sslmode": sslmode}
+
+    sslrootcert = os.getenv("API_DB_SSLROOTCERT", "").strip()
+
+    if sslrootcert:
+        cert_path = Path(sslrootcert)
+
+        if not cert_path.is_absolute():
+            cert_path = PROJECT_ROOT / cert_path
+
+        cert_path = cert_path.resolve()
+
+        if not cert_path.is_file():
+            raise RuntimeError(f"No se encontró el certificado CA: {cert_path}")
+
+        connection_options["sslrootcert"] = str(cert_path)
+
+    elif sslmode in {"verify-ca", "verify-full"}:
+        raise RuntimeError(
+            "Configura API_DB_SSLROOTCERT para verificar el certificado TLS."
+        )
+
     explicit_url = os.getenv("DATABASE_URL")
+
     if explicit_url:
-        return explicit_url
+        return make_conninfo(
+            explicit_url,
+            **connection_options,
+        )
 
     password = os.getenv("API_DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD", "")
+
     if not password or password.startswith("replace_with_"):
         raise RuntimeError(
             "Configura API_DB_PASSWORD o POSTGRES_PASSWORD en el .env del proyecto."
@@ -29,6 +71,7 @@ def _database_url() -> str:
         password=password,
         dbname=os.getenv("POSTGRES_DB", "uniselecciones"),
         connect_timeout=3,
+        **connection_options,
     )
 
 
