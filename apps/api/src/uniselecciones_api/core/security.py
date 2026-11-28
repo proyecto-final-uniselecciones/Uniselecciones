@@ -1,6 +1,7 @@
 """Verificación de contraseñas y emisión de tokens de acceso."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import jwt
 from argon2 import PasswordHasher
@@ -45,4 +46,15 @@ def create_access_token(*, user_id: int, email: str, role: str) -> str:
         },
         settings.jwt_secret,
         algorithm="HS256",
+    )
+
+
+def decode_access_token(token: str) -> dict[str, Any]:
+    """Verifica y decodifica un JWT de acceso."""
+    return jwt.decode(
+        token,
+        settings.jwt_secret,
+        algorithms=["HS256"],
+        issuer=settings.jwt_issuer,
+        options={"require": ["sub", "email", "role", "iss", "iat", "exp"]},
     )
