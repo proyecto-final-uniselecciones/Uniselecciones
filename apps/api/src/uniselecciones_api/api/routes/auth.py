@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from psycopg.rows import dict_row
 
 from uniselecciones_api.core.config import settings
+from uniselecciones_api.core.database import connect_db
 from uniselecciones_api.core.dependencies import get_current_user
 from uniselecciones_api.core.security import (
     create_access_token,
@@ -42,7 +43,7 @@ _UAA_STUDENT_EMAIL = re.compile(r"^al\d{6}@edu\.uaa\.mx$", re.IGNORECASE)
 def login(credentials: LoginRequest) -> LoginResponse:
     """Verifica credenciales contra PostgreSQL y devuelve un JWT."""
     try:
-        with psycopg.connect(settings.database_url) as connection:
+        with connect_db() as connection:
             with connection.cursor(row_factory=dict_row) as cursor:
                 cursor.execute(
                     """
@@ -114,7 +115,7 @@ def login(credentials: LoginRequest) -> LoginResponse:
 def register(credentials: RegisterRequest) -> RegisterResponse:
     """Crea una cuenta activa con el rol elegido y devuelve un JWT."""
     try:
-        with psycopg.connect(settings.database_url) as connection:
+        with connect_db() as connection:
             with connection.cursor(row_factory=dict_row) as cursor:
                 cursor.execute(
                     """

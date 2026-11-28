@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from uniselecciones_api import __version__
-from uniselecciones_api.core.config import settings
+from uniselecciones_api.core.database import connect_db
 from uniselecciones_api.schemas.health import HealthResponse
 
 router = APIRouter(tags=["health"])
@@ -19,7 +19,7 @@ router = APIRouter(tags=["health"])
 def health_check() -> HealthResponse | JSONResponse:
     """Comprueba que la API responde y que PostgreSQL acepta consultas."""
     try:
-        with psycopg.connect(settings.database_url) as connection:
+        with connect_db() as connection:
             connection.execute("SELECT 1")
     except psycopg.Error:
         return JSONResponse(

@@ -7,7 +7,7 @@ import psycopg
 from fastapi import APIRouter, HTTPException, Query, status
 from psycopg.rows import dict_row
 
-from uniselecciones_api.core.config import settings
+from uniselecciones_api.core.database import connect_db
 from uniselecciones_api.schemas.university import UniversitySummary
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def list_universities(
 ) -> list[UniversitySummary]:
     """Devuelve las instituciones del catálogo, opcionalmente filtradas por estado."""
     try:
-        with psycopg.connect(settings.database_url) as connection:
+        with connect_db() as connection:
             with connection.cursor(row_factory=dict_row) as cursor:
                 query = """
                     SELECT id_univ, nombre, ciudad, region::text AS region
