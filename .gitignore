@@ -12,3 +12,6 @@ build/
 .idea/
 .vscode/
 *.log
+
+# Llaves locales de firma digital
+/keys/
