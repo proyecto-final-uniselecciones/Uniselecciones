@@ -9,7 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from psycopg.rows import dict_row
 
-from uniselecciones_api.core.config import settings
+from uniselecciones_api.core.database import connect_db
 from uniselecciones_api.core.security import decode_access_token
 from uniselecciones_api.schemas.auth import AuthenticatedUser
 
@@ -60,7 +60,7 @@ def get_current_user(
         raise _unauthorized() from None
 
     try:
-        with psycopg.connect(settings.database_url) as connection:
+        with connect_db() as connection:
             with connection.cursor(row_factory=dict_row) as cursor:
                 cursor.execute(
                     """

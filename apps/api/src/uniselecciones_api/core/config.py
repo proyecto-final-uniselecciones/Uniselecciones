@@ -41,11 +41,43 @@ def _jwt_secret() -> str:
     return secret
 
 
+def _required_key(name: str) -> str:
+    """Valida una llave criptográfica de al menos 256 bits."""
+    key = os.getenv(name, "")
+    if (
+        len(key) < 64
+        or key.startswith("replace_with_")
+        or any(character.isspace() for character in key)
+    ):
+        raise RuntimeError(
+            f"Configura {name} con una llave aleatoria de al menos 64 caracteres."
+        )
+    return key
+
+
+def _region_nodo() -> str:
+    region = os.getenv("APP_REGION_NODO", "").upper()
+    if region not in {"AGS", "JAL", "ZAC"}:
+        raise RuntimeError("APP_REGION_NODO debe ser AGS, JAL o ZAC.")
+    return region
+
+
+def _enforce_cp() -> bool:
+    value = os.getenv("APP_ENFORCE_CP", "false").lower()
+    if value not in {"true", "false"}:
+        raise RuntimeError("APP_ENFORCE_CP debe ser true o false.")
+    return value == "true"
+
+
 @dataclass(frozen=True)
 class Settings:
     database_url: str
     jwt_secret: str
     access_token_minutes: int
+    region_nodo: str
+    cripto_key: str
+    matricula_key: str
+    enforce_cp: bool
     jwt_issuer: str = "uniselecciones-api"
 
 
@@ -53,4 +85,8 @@ settings = Settings(
     database_url=_database_url(),
     jwt_secret=_jwt_secret(),
     access_token_minutes=int(os.getenv("ACCESS_TOKEN_MINUTES", "60")),
+    region_nodo=_region_nodo(),
+    cripto_key=_required_key("APP_CRIPTO_KEY"),
+    matricula_key=_required_key("APP_MATRICULA_KEY"),
+    enforce_cp=_enforce_cp(),
 )
